@@ -1,0 +1,231 @@
+#! /usr/bin/python3
+
+# Copyright 2020 University of Adelaide
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#    http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+ 
+import Build
+import ASMParser
+import Collection
+import ARMMatcher
+import ARMParserMode
+import Replacer
+import Exec
+import ELMO
+import ELMOVisitor
+import Config
+
+import sys
+import os
+import random
+import os.path as _p
+import argparse
+import shutil as _sh
+import numpy as _np
+import time
+
+def get_str_input(num):
+    inp = ''
+    for i in range(0, num):
+        hh= random.randint(0, 255)
+        if i == num -1:
+            inp+='0x%02x'%(hh)
+        else:
+            inp+='0x%02x, '%(hh)
+    return inp
+
+
+def expandbytes(bytetext):
+    i=0
+    expanded = ""
+    while i<len(bytetext)-2:
+        expanded += '0x' + bytetext[i] + bytetext[i+1] + ', '
+        i += 2
+    expanded += '0x' + bytetext[i] + bytetext[i+1]
+    return expanded
+def get_first(row):
+    if row.find(' ') != -1:
+        return row.split(' ')[0]
+    else:
+        return row
+def load_fixed_inputs(inpfilename):
+    inpfile = open(inpfilename, 'r')
+    fixed_inputs = [ get_first(l.strip()) for l in inpfile.readlines() ]
+    fixed_inputs = list(map(expandbytes, fixed_inputs))
+    return fixed_inputs
+
+def gen_fixed_inputs(num_inps):
+    fixed_inputs = [
+    '0x00, 0x03, 0x65, 0x87, 0x83, 0x4b, 0xc6, 0xe4, 0x22, 0x33, 0x56, 0x76, 0x9f, 0xff, 0xdf, 0xff',
+    '0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x22, 0x33, 0x56, 0x76, 0x9f, 0xff, 0xdf, 0xff',
+    '0x22, 0x33, 0x56, 0x76, 0x9f, 0xff, 0xdf, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00']
+
+    # keep this plaintext as last since this is the on is in c code by default
+    # what ever that is left in the end is the output from the standard test, keep main.py's srd_config 
+    # in sync with this.
+
+    inputs = []
+    if num_inps > 4:
+        for g in range(0, num_inps - 4):
+            inputs.append(get_str_input(16))
+
+    fixed_inputs.extend(inputs)
+    fixed_inputs.append('0xda, 0x39, 0xa3, 0xee, 0x5e, 0x6b, 0x4b, 0x0d, 0x32, 0x55, 0xbf, 0xef, 0x95, 0x60, 0x18, 0x90')
+    #fixed_inputs.append('0xc1, 0xce, 0x4d, 0xba, 0xec, 0x7b, 0xf1, 0x22, 0x2f, 0xae, 0x25, 0x9a, 0xef, 0x1a, 0xcf, 0x99')
+
+    # remove default fixed inputs if count is less than 4
+    if num_inps < 4:
+        fixed_inputs = fixed_inputs[len(fixed_inputs) - num_inps:]
+    if num_inps == 1:
+        fixed_inputs = ['0xda, 0x39, 0xa3, 0xee, 0x5e, 0x6b, 0x4b, 0x0d, 0x32, 0x55, 0xbf, 0xef, 0x95, 0x60, 0x18, 0x90']
+
+    return fixed_inputs
+
+cfg = Config.CFG()
+
+parser = argparse.ArgumentParser()
+parser.add_argument("bc", help="build config json file in project directory")
+parser.add_argument("--fixed-inputs-file", help="file with fixed inputs", type=str)
+parser.add_argument("--fixed-inputs", help="number of fixed inputs", type=int)
+parser.add_argument("--stop-on-first-leak", help="stop if one or more leaks found for a fixed input", action="store_true")
+parser.add_argument("--reps", help="number of repeats", type=int)
+parser.add_argument("--output-dir", help="output directory", type=str)
+parser.add_argument("-b","--build", help="build binary", action="store_true")
+parser.add_argument("--rest", help="sleep to reduce CPU temp on parallel runs", action="store_true")
+#parser.add_argument("-a","--analyze", help="analyze elmo output",action="store_true")
+#parser.add_argument("-m","--modify", help="do modifications",action="store_true")
+#parser.add_argument("-r","--replace", help="replacement type 2",action="store_true")
+#parser.add_argument("-k","--keep", help="keep original files",action="store_true")
+#parser.add_argument("-d","--dry", help="dry run",action="store_true")
+parser.add_argument("--from-asm", help="do not assemble source files (use assembler files as is)",action="store_true")
+
+args = parser.parse_args()
+cfg.cwd = os.path.dirname(os.path.abspath(args.bc))
+if args.reps is None:
+    print("err: repeat count needed")
+    exit(-1)
+
+REPS = args.reps
+OUT_DIR = "."
+if args.output_dir is not None:
+    OUT_DIR = args.output_dir
+random.seed(1234)
+
+fixed_inputs = None
+if args.fixed_inputs is not None:
+    fixed_inputs = gen_fixed_inputs(args.fixed_inputs)
+
+if args.fixed_inputs_file is not None:
+    fixed_inputs = load_fixed_inputs(args.fixed_inputs_file)
+
+tval_final = _p.splitext(cfg.elmo_ptvalues)[0]+"_final.txt"
+tval_final = _p.splitext(cfg.elmo_tvalues)[0]+"_final.txt"
+ptval_final = _p.splitext(cfg.elmo_ptvalues)[0]+"_final.txt"
+
+if _p.isfile(ptval_final):
+    os.unlink(ptval_final)
+if _p.isfile(tval_final):
+    os.unlink(tval_final)
+improvement = []
+
+src_config = {
+        'NTRACES' : str(REPS),
+        'FIXED_INPUT' : fixed_inputs[0],
+    }
+b = Build.Builder(src_config=src_config, cc=cfg.cc,ld=cfg.ld,asm=cfg.asm,
+        cwd=cfg.cwd,objcopy=cfg.objcopy,buildfile=os.path.basename(args.bc))
+
+ffixedinputs = open(OUT_DIR + "/fixedinputs.txt", "w")
+
+nfixedinp = 0
+
+for fixed_input in fixed_inputs:
+    ffixedinputs.write(fixed_input.replace('0x','').replace(', ','') + "\n")
+    src_config = {
+            'NTRACES' : str(REPS),
+            'FIXED_INPUT' : fixed_input,
+        }
+    b.source_cfg_update(src_config)
+    if args.from_asm:
+        b.build_asm_for_tmpl()
+    else:
+        b.build_asm()
+
+    fm = Collection.Mapper()
+
+    trigs = []
+    labels = {}
+    insts_by_file = {}
+    for f in b.get_asm_files(fullpath=True):
+        a = ASMParser.ASMParser(f, mode=ARMParserMode.ARMMode())
+        fm.add_funcs(a.get_funcs())
+        fm.add_trigs(a.get_trigs())
+        trigs.extend(a.get_trigs())
+        insts_by_file[a.get_file()] = a.get_lines()
+        labels[a.get_file()] = a.get_labels()
+    fm.link()
+    
+    b.build_obj()
+    b.link("final")
+    b.makeflatbin("final")
+
+    i = ELMO.Interop()
+    i.run(os.path.abspath(_p.join(cfg.cwd,'final.bin')))
+
+    # initialize with copies for first round
+    if not _p.isfile(ptval_final):
+        _sh.copy(cfg.elmo_ptvalues, ptval_final)
+        _sh.copy(cfg.elmo_tvalues, tval_final)
+    
+    PTf = _np.loadtxt(ptval_final)
+    PT = _np.loadtxt(cfg.elmo_ptvalues)
+    Tf = _np.loadtxt(tval_final)
+    T = _np.loadtxt(cfg.elmo_tvalues)
+    # pick abs max from final file and new file and merge
+    leaks = _np.sum(_np.abs(T) >= 4.5)
+    new_leaks = _np.sum( (_np.abs(Tf) < 4.5) & (_np.abs(T) >= 4.5) & (_np.abs(Tf) < _np.abs(T)) )
+    if len(improvement) == 0:
+        improvement.append(leaks)
+    else:
+        improvement.append(new_leaks)
+    PTx = _np.where(_np.abs(PTf) > _np.abs(PT), PTf, PT)
+    Tx = _np.where(_np.abs(Tf) > _np.abs(T), Tf, T)
+    
+    _np.savetxt(ptval_final, PTx)
+    _np.savetxt(tval_final, Tx)
+
+    print('input iteration:', nfixedinp)
+    print('input:', fixed_input) 
+    print('leaks:', leaks)
+    print('new leaks:', new_leaks)
+    
+    if args.rest:
+        print('info: resting')
+        time.sleep(10)
+        print('info: continuing')
+
+    if args.stop_on_first_leak and leaks > 0:
+        print('info: stop on leak_count > 0')
+        break
+    if os.path.exists('stop'):
+        print('info: stop flag detected')
+        os.unlink('stop')
+        break
+
+    nfixedinp += 1
+_sh.move(ptval_final, cfg.elmo_ptvalues)
+_sh.move(tval_final, cfg.elmo_tvalues)
+fimpr = open(OUT_DIR + '/improvement.txt', 'a')
+fimpr.write(str(improvement) + '\n')
+print('total improvement:', improvement)
+

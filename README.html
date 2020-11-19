@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>README</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+</head>
+<body>
+<h1 id="readme">README</h1>
+<h2 id="setting-up-environment">Setting up environment</h2>
+<p>Run the following commands in a <code>bash</code> shell. Please make sure that you run all commands regarding Rosita after you have sourced the content of <code>envvars</code>.</p>
+<pre><code>./setup.sh
+source envvars                                  # setup required environment variables </code></pre>
+<h2 id="running-rosita">Running Rosita</h2>
+<p>Rosita’s workflow is as follows,</p>
+<ol type="1">
+<li><p>Build the cipher implementation to be tested using customizations needed and run ELMO to emulate power traces. The <code>--from-asm</code> option is needed for all runs after the first run. This is due to the modifications from Rosita is applied to assembler files and if built from the source files, these files get overwritten.</p>
+<pre><code> ./ROSITA/emulatetraces --reps &lt;TRACE-COUNT&gt; --fixed-inputs &lt;NO-OF-FIXED-INPUTS&gt; -b [--from-asm] &lt;BUILD-JSON-FILE&gt;
+ # Examples:
+ # Note for Xoodoo: You may need to run patchror.sh in Xoodoo test directory to replace ror instructions 
+ # according to .syntax unified/divided directives which Rosita doesn&#39;t support currently
+ ./ROSITA/emulatetraces --reps 10000 --fixed-inputs 1 -b [--from-asm] ./TESTS/xoodoo/build_2share.json 
+ ./ROSITA/emulatetraces --reps 10000 --fixed-inputs 1 -b [--from-asm] ./TESTS/chacha20/build_2share.json
+ ./ROSITA/emulatetraces --reps 10000 --fixed-inputs 1 -b [--from-asm] ./TESTS/aes/build.json</code></pre></li>
+<li><p>Apply code rewrites using Rosita’s pattern library</p>
+<pre><code> ./ROSITA/rosita -m &lt;BUILD-JSON-FILE&gt;
+ # Example: 
+ ./ROSITA/rosita -m ./TESTS/xoodoo/build_2share.json</code></pre></li>
+<li><p>Repeat from 1. until the leakage measure is zero</p></li>
+</ol>
+<h2 id="additional-options">Additional Options</h2>
+<ul>
+<li><p>View instruction level leakage and root causes (after running ELMO using <code>-b</code> option for emulatetraces)</p>
+<pre><code>  ./ROSITA/rosita -a ./TESTS/aes/build.json</code></pre></li>
+<li><p>Dump t-test values as a text file</p>
+<pre><code>  ./ROSITA/rosita --emit-tvals ./TESTS/aes/build.json</code></pre></li>
+</ul>
+</body>
+</html>

@@ -1,0 +1,132 @@
+#! /usr/bin/python3
+
+# Copyright 2020 University of Adelaide
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#    http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import DeviceContext
+import Build
+import ASMParser
+import Collection
+import ARMParserMode
+import ARMMatcher
+import Replacer
+import Exec
+import ELMO
+import ELMOVisitor
+import Config
+
+import sys
+import os
+import argparse
+
+cfg = Config.CFG()
+
+parser = argparse.ArgumentParser()
+parser.add_argument("bc", help="build config json file in project directory")
+parser.add_argument("--emit-tvals",help="emit cycle accurate t-values",action="store_true")
+#parser.add_argument("-b","--build", help="build binary",action="store_true")
+parser.add_argument("-a","--analyze", help="analyze elmo output",action="store_true")
+parser.add_argument("-m","--modify", help="do modifications",action="store_true")
+parser.add_argument("-r","--replace", help="replacement type 2",action="store_true")
+parser.add_argument("-k","--keep", help="keep original files",action="store_true")
+parser.add_argument("-d","--dry", help="dry run",action="store_true")
+parser.add_argument("--from-asm", help="do not assemble source files (use assembler files as is)",action="store_true")
+
+args = parser.parse_args()
+cfg.cwd = os.path.dirname(os.path.abspath(args.bc))
+
+src_config = {
+        'NTRACES' : '10000',
+       # 'FIXED_INPUT' : '0x00, 0x03, 0x65, 0x87, 0x83, 0x4b, 0xc6, 0xe4, 0x22, 0x33, 0x56, 0x76, 0x9f, 0xff, 0xdf, 0xff',
+        'FIXED_INPUT' : '0xda, 0x39, 0xa3, 0xee, 0x5e, 0x6b, 0x4b, 0x0d, 0x32, 0x55, 0xbf, 0xef, 0x95, 0x60, 0x18, 0x90',
+    }
+b = Build.Builder(src_config=src_config, cc=cfg.cc,ld=cfg.ld,asm=cfg.asm,cwd=cfg.cwd,
+        objcopy=cfg.objcopy,buildfile=os.path.basename(args.bc))
+
+if args.keep:
+    cfg.cfg_keep_orginal = True
+    
+#if args.build and not args.from_asm:
+#    b.build_asm()
+
+#if args.build and args.from_asm:
+#    b.build_asm_for_tmpl()
+
+
+fm = Collection.Mapper()
+
+trigs=[]
+labels={}
+insts_by_file = {}
+for f in b.get_asm_files(fullpath=True):
+    a = ASMParser.ASMParser(f, mode=ARMParserMode.ARMMode())
+    fm.add_funcs(a.get_funcs())
+    fm.add_trigs(a.get_trigs())
+    trigs.extend(a.get_trigs())
+    insts_by_file[a.get_file()] = a.get_lines()
+    labels[a.get_file()] = a.get_labels()
+fm.link()
+
+#
+# matchers = [Matcher.LDRMatcherARM(),
+#             Matcher.STRMatcherARM(),
+#             Matcher.STRLDRMatcherARM(),
+#             Matcher.STRMatcher2ARM(),
+#             Matcher.STRBARM(),
+#             Matcher.ANYMatcherARM()]
+matchers = [ARMMatcher.LDRMatcherARM(),
+            ARMMatcher.LDRMatcherARM1(),
+            ARMMatcher.LDRMatcherARM2(),
+            ARMMatcher.STRMatcherARM(),
+            ARMMatcher.STRMatcherARM1(),
+            ARMMatcher.MOVOverwriteMatcherARM(),
+            ARMMatcher.ShiftRotMatherARM(),
+            ARMMatcher.ShiftRotMatherARM3(),
+            ARMMatcher.EORSClassMatcherARM(),
+            ARMMatcher.ANYMatcherARM()]
+if args.replace:
+    matchers = []
+
+r = Replacer.Replacer()
+
+
+
+#if args.build:
+#    b.build_obj()
+#    b.link("final")
+#    b.makeflatbin("final")
+
+dc = DeviceContext.ARMDeviceContext()
+
+if args.analyze or args.modify or args.emit_tvals:
+    bi = Exec.BinInfo(cfg.cwd + "/final", cfg.objdump, cfg.readelf)
+    lm = ELMO.ExecutionTracer(dc, cfg.elmo_asm_output, cfg.elmo_tvalues, cfg.elmo_ptvalues, bi, fm, trigs, labels, insts_by_file, xprint=False)
+    if args.analyze:
+        printer = ELMOVisitor.Printer()
+        lm.run(printer, trigs)
+
+    if args.modify:
+        vis = ELMOVisitor.InstMatcher(matchers)
+        lm.run(vis, trigs)
+        rps = vis.match()
+        r.replace(rps, args.dry)
+
+    if args.emit_tvals:
+        vis = ELMOVisitor.CycleAccurateTValEmitter(dc)
+        lm.run(vis, trigs)
+
+    #b.build_sources()
+    #b.link("final_old")
+
+

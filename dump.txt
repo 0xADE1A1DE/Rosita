@@ -1,0 +1,33 @@
+Contents of the .debug_line section:
+
+CU: ../../cm3/vector.c:
+File name                            Line number    Starting address    View
+vector.c                                      99           0x80000c0
+vector.c                                      99           0x80000c2
+
+vector.c                                     104           0x80000c2
+vector.c                                     106           0x80000c2       1
+vector.c                                     106           0x80000c4
+
+vector.c                                      63           0x80000c4
+vector.c                                      67           0x80000c4       1
+vector.c                                      62           0x80000c6
+vector.c                                      67           0x80000ca
+vector.c                                      62           0x80000cc
+vector.c                                      67           0x80000d0
+vector.c                                      70           0x80000d4
+vector.c                                      73           0x80000dc
+vector.c                                      74           0x80000e2
+vector.c                                      73           0x80000e8
+vector.c                                      78           0x80000ea
+vector.c                                      79           0x80000f0
+vector.c                                      78           0x80000f6
+vector.c                                      81           0x80000f8
+vector.c                                      82           0x80000fe
+vector.c                                      89           0x8000104
+vector.c                                      92           0x8000108
+vector.c                                      92           0x800010a
+vector.c                                      93           0x8000110
+vector.c                                      93           0x8000140
+
+

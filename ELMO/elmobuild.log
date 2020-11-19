@@ -1,0 +1,36 @@
+gcc -g -o elmo -O2 elmo.c -lm
+In file included from elmo.c:62:
+include/powermodel.h: In function ‘calc_props_ini’:
+include/powermodel.h:265:5: warning: ignoring return value of ‘fscanf’, declared with attribute warn_unused_result [-Wunused-result]
+  265 |     fscanf(ft,"%d",&totaltraces);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from elmo.c:63:
+include/fixedvsrandom.h: In function ‘gettracelength’:
+include/fixedvsrandom.h:77:9: warning: ignoring return value of ‘fscanf’, declared with attribute warn_unused_result [-Wunused-result]
+   77 |         fscanf(fp,"%lf",&ch);
+      |         ^~~~~~~~~~~~~~~~~~~~
+include/fixedvsrandom.h: In function ‘gettrace’:
+include/fixedvsrandom.h:122:5: warning: ignoring return value of ‘fscanf’, declared with attribute warn_unused_result [-Wunused-result]
+  122 |     fscanf(fp,"%lf",&value);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~
+In file included from elmo.c:63:
+include/fixedvsrandom.h: In function ‘getmaskpoints’:
+include/fixedvsrandom.h:287:9: warning: ignoring return value of ‘fscanf’, declared with attribute warn_unused_result [-Wunused-result]
+  287 |         fscanf(fp,"%d %d",&op1_mask, &op2_mask);
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/fixedvsrandom.h: In function ‘getmaskpointslen’:
+include/fixedvsrandom.h:317:9: warning: ignoring return value of ‘fscanf’, declared with attribute warn_unused_result [-Wunused-result]
+  317 |         fscanf(fp,"%d %d",&op1_mask, &op2_mask);
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+include/fixedvsrandom.h: In function ‘getmasklen’:
+include/fixedvsrandom.h:345:9: warning: ignoring return value of ‘fscanf’, declared with attribute warn_unused_result [-Wunused-result]
+  345 |         fscanf(fp,"%d %d",&op1_mask, &op2_mask);
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+elmo.c: In function ‘readcoeffs’:
+elmo.c:4065:9: warning: ignoring return value of ‘fgets’, declared with attribute warn_unused_result [-Wunused-result]
+ 4065 |         fgets(line, sizeof line, fp);
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+elmo.c: In function ‘load_coeffs’:
+elmo.c:4101:5: warning: ignoring return value of ‘fgets’, declared with attribute warn_unused_result [-Wunused-result]
+ 4101 |     fgets(line, sizeof line, fpcoeffs);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1,0 +1,4 @@
+
+export TOOLCHAIN_DIR=$(pwd)/TOOLCHAIN/gnu-mcu-eclipse/arm-none-eabi-gcc/7.3.1-1.1-20180724-0637/bin/
+export ELMO_DIR=$(pwd)/ELMO
+export PATH=$PATH:$TOOLCHAIN_DIR

@@ -1,0 +1,32 @@
+{
+    "_comment": "shiftrows.c",
+    "c_tmpl_files":
+    [
+        "simple.c"
+    ],
+    "c_files" :
+    [
+        "main.c", "byte_mask_aes.c", "random.c", "rosita_vars.c"
+    ],
+    "asm_files" :
+    [
+
+    ],
+    "cxx_files" :
+    [
+
+    ],
+    "obj_files" :
+    [
+        "vector.o", "elmoasmfunctions.o"
+    ],
+    "reserve_register" : "r7",
+    "reserve_register_in_files" :
+    [
+    ],
+    "reserve_register_cflags" : "-ffixed-r7",
+    "cflags" : " -g -Os -Wextra -Wshadow -Wimplicit-function-declaration -Wredundant-decls -Wmissing-prototypes -Wstrict-prototypes -fno-common -ffunction-sections -fdata-sections -MD -Wall -Wundef -mthumb -mcpu=cortex-m0 -msoft-float -masm-syntax-unified -ffixed-r7 -c $file",
+    "reserve_register_cxxflags" : "-ffixed-r7",
+    "cxxflags" : "",
+    "ldflags" : "--static -nostartfiles -TMBedAES.ld -Wl,-Map=.map -Wl,--gc-sections -mthumb -mcpu=cortex-m0 -msoft-float $files -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group"
+}
