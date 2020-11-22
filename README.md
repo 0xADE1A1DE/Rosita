@@ -1,5 +1,12 @@
 README
 ===
+## Introduction
+Rosita is a code rewrite framework aims at eliminating side-channel leakage from masked implementations. 
+It uses a leakage emulator (based on [ELMO](https://github.com/sca-research/ELMO)) to identify
+leaking instructions, and applies code modifications to eliminate the leakage.
+
+For more information, see the [NDSS 2021 paper](https://eprint.iacr.org/2019/1445.pdf)
+and the [datasets](https://adelaide.figshare.com/projects/Rosita/91580) it describes.
 
 ## Setting up environment
 
