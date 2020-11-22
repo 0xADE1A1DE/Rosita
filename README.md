@@ -8,6 +8,9 @@ leaking instructions, and applies code modifications to eliminate the leakage.
 For more information, see the [NDSS 2021 paper](https://eprint.iacr.org/2019/1445.pdf)
 and the [datasets](https://adelaide.figshare.com/projects/Rosita/91580) it describes.
 
+Please use these [scripts and tools](https://adelaide.figshare.com/articles/software/SCRIPTS/13270925)
+to draw the corresponding figures in our paper.
+
 ## Setting up environment
 
 Run the following commands in a `bash` shell. Please make sure that you run all
