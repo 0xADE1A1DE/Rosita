@@ -19,9 +19,8 @@ class CFG:
     cfg_keep_orginal = False
     cfg_mod_line_end_marker = "\t\t\t@ edited"
 
-    #cwd = "/home/madura/wrk/ELMO-master/test/elmotestbinaries/simple.aes"
     cwd = ""
-    #cwd = "/home/madura/wrk/ELMO-master/Examples/FixedvsRandom/MaskedAES_R1/"
+    
     ELMO = os.getenv('ELMO_DIR')
     if ELMO is None:
         print('Set $ELMO_DIR!')
