@@ -6,7 +6,8 @@ It uses a leakage emulator (based on [ELMO](https://github.com/sca-research/ELMO
 leaking instructions, and applies code modifications to eliminate the leakage.
 
 For more information, see the [NDSS 2021 paper](https://eprint.iacr.org/2019/1445.pdf)
-and the [datasets](https://adelaide.figshare.com/projects/Rosita/91580) it describes.
+and the [datasets](https://adelaide.figshare.com/projects/Rosita/91580) it describes. 
+Our talk on Rosita at Real World Crpyto 2021 is available [here](https://www.youtube.com/watch?v=kO-3Uh7tq60).
 
 Please use these [scripts and tools](https://adelaide.figshare.com/articles/software/SCRIPTS/13270925)
 to draw the corresponding figures in our paper.
