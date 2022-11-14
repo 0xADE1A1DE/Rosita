@@ -58,3 +58,12 @@ and if built from the source files, these files get overwritten.
         ./ROSITA/rosita --emit-tvals ./TESTS/aes/build.json
 
 
+## Acknowledgments
+This project was supported by:
+* European Union Horizon 2020 research and innovation program under CERBERO project (grant agreement number 732105)
+* The Australian Research Council project numbers DE200101577, DP200102364, and DP210102670
+* Data61, CSIRO
+* The Research Center for Cyber Security at Tel- Aviv University established by the State of Israel, the Prime
+Minister’s Office and Tel-Aviv University
+* A gift from
+Intel.
